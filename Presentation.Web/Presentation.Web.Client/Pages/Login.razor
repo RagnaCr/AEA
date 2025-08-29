@@ -1,0 +1,67 @@
+﻿@page "/login"
+@using System.ComponentModel.DataAnnotations
+@using Presentation.Web.Services
+
+@inject IAuthService AuthService
+@inject NavigationManager Navigation
+
+<h3>Login</h3>
+
+<EditForm Model="@_formModel" OnValidSubmit="HandleLogin">
+    <DataAnnotationsValidator />
+    <ValidationSummary class="text-danger" />
+
+    <div class="form-group mb-2">
+        <label>Email:</label>
+        <InputText type="email" class="form-control" @bind-Value="_formModel.Email" />
+        <ValidationMessage For="@(() => _formModel.Email)" />
+    </div>
+    <div class="form-group mb-2">
+        <label>Password:</label>
+        <InputText type="password" class="form-control" @bind-Value="_formModel.Password" />
+        <ValidationMessage For="@(() => _formModel.Password)" />
+    </div>
+    <button type="submit" class="btn btn-primary mt-2">Login</button>
+
+    @if (!string.IsNullOrEmpty(_errorMessage))
+    {
+        <div class="alert alert-danger mt-2">@_errorMessage</div>
+    }
+</EditForm>
+
+@code {
+    // 1. Отдельная, изменяемая модель для формы
+    public class LoginFormModel
+    {
+        [Required]
+        [EmailAddress]
+        public string Email { get; set; } = "";
+
+        [Required]
+        public string Password { get; set; } = "";
+    }
+
+    private readonly LoginFormModel _formModel = new();
+    private string? _errorMessage;
+
+    private async Task HandleLogin()
+    {
+        _errorMessage = null;
+
+        // 2. Создаем неизменяемый DTO `LoginRequest` из данных формы
+        var requestDto = new LoginRequest(
+            _formModel.Email,
+            _formModel.Password
+        );
+
+        var result = await AuthService.LoginAsync(requestDto);
+        if (result.IsSuccess)
+        {
+            Navigation.NavigateTo("/", forceLoad: true);
+        }
+        else
+        {
+            _errorMessage = result.ErrorMessage;
+        }
+    }
+}
